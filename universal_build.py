@@ -124,6 +124,7 @@ class UniversalBuildSystem:
                 "answerPrefix",
                 "showAnswerInstructions",
                 "battleModeWrongGuessBroadcast",
+                "battleModeShowWrongGuesserName",
                 "rewardCountOverride",
                 "punishEffectDurationSecondsMin",
                 "punishEffectDurationSecondsMax",

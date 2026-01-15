@@ -56,6 +56,12 @@ public final class TriviaConfigScreen extends Screen {
 		}).dimensions(this.width / 2 - 140, y, w, h).build());
 		y += gap;
 
+		this.addDrawableChild(ButtonWidget.builder(battleNameLabel(this.working.battleModeShowWrongGuesserName), btn -> {
+			this.working.battleModeShowWrongGuesserName = !this.working.battleModeShowWrongGuesserName;
+			btn.setMessage(battleNameLabel(this.working.battleModeShowWrongGuesserName));
+		}).dimensions(this.width / 2 - 140, y, w, h).build());
+		y += gap;
+
 		this.maxAttempts = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Max Attempts (-1 = unlimited)"));
 		this.maxAttempts.setText(Integer.toString(working.maxAttempts));
 		this.addDrawableChild(this.maxAttempts);
@@ -110,6 +116,7 @@ public final class TriviaConfigScreen extends Screen {
 					: this.working.answerPrefix;
 				cfg.showAnswerInstructions = this.working.showAnswerInstructions;
 				cfg.battleModeWrongGuessBroadcast = this.working.battleModeWrongGuessBroadcast;
+				cfg.battleModeShowWrongGuesserName = this.working.battleModeShowWrongGuesserName;
 				cfg.maxAttempts = parseInt(this.maxAttempts.getText(), working.maxAttempts);
 				cfg.questionDurationSeconds = parseInt(this.questionSeconds.getText(), working.questionDurationSeconds);
 				cfg.cooldownSeconds = parseInt(this.cooldownSeconds.getText(), working.cooldownSeconds);
@@ -150,6 +157,10 @@ public final class TriviaConfigScreen extends Screen {
 		return Text.literal("Battle mode wrong-guess broadcast: " + (enabled ? "ON" : "OFF"));
 	}
 
+	private static Text battleNameLabel(boolean enabled) {
+		return Text.literal("Battle mode shows guesser name: " + (enabled ? "ON" : "OFF"));
+	}
+
 	private static List<String> splitCsv(String csv) {
 		if (csv == null || csv.isBlank()) {
 			return List.of("minecraft:air");
@@ -185,6 +196,8 @@ public final class TriviaConfigScreen extends Screen {
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Hint OFF hides the 'Answer with ...' line (question still broadcasts)."), helpX, helpY, 0xAAAAAA);
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Battle mode broadcasts wrong guesses globally (can be disabled)."), helpX, helpY, 0xAAAAAA);
+		helpY += line;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Battle name display can be toggled with: /trivia battle name on|off"), helpX, helpY, 0xAAAAAA);
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Reward Count Override: -1=random, otherwise fixed (capped by item stack size)."), helpX, helpY, 0xAAAAAA);
 

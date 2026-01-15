@@ -74,6 +74,10 @@ public final class TriviaConfigManager {
 						cfg.rewardCountOverride = -1;
 						changed = true;
 					}
+					if (!obj.has("battleModeShowWrongGuesserName")) {
+						cfg.battleModeShowWrongGuesserName = true;
+						changed = true;
+					}
 				}
 			} catch (Exception ignored) {
 				// If the JSON isn't parseable here, the outer try/catch will handle it.

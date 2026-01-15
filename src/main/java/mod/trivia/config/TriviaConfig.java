@@ -19,9 +19,14 @@ public final class TriviaConfig {
 
 	/**
 	 * When enabled, wrong guesses are broadcast globally ("<player>'s guess of <guess> was wrong").
-	 * Note: this broadcast is also suppressed when showAnswerInstructions is OFF.
+	 * Note: when showAnswerInstructions is OFF, the broadcast remains but the extra hint suffix is omitted.
 	 */
 	public boolean battleModeWrongGuessBroadcast = true;
+
+	/**
+	 * When battleModeWrongGuessBroadcast is enabled, controls whether the broadcast includes the player's name.
+	 */
+	public boolean battleModeShowWrongGuesserName = true;
 
 	/**
 	 * Override the number of items rewarded on a correct guess.

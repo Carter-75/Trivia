@@ -146,11 +146,14 @@ public final class TriviaGame {
 			return true;
 		}
 
-		if (cfg.battleModeWrongGuessBroadcast && cfg.showAnswerInstructions) {
-			player.getServer().getPlayerManager().broadcast(
-				Text.literal("Trivia: " + player.getName().getString() + "'s guess of " + guessDisplay + " was wrong."),
-				false
-			);
+		if (cfg.battleModeWrongGuessBroadcast) {
+			String base = cfg.battleModeShowWrongGuesserName
+				? ("Trivia: " + player.getName().getString() + "'s guess of " + guessDisplay + " was wrong.")
+				: ("Trivia: a guess of " + guessDisplay + " was wrong.");
+			String suffix = cfg.showAnswerInstructions
+				? " Hint: /trivia battle name off, /trivia hint off"
+				: "";
+			player.getServer().getPlayerManager().broadcast(Text.literal(base + suffix), false);
 		}
 
 		String triesLeft = (cfg.maxAttempts < 0)
@@ -190,8 +193,9 @@ public final class TriviaGame {
 			server.getPlayerManager().broadcast(
 				Text.literal(
 					"Answer with " + cfg.answerPrefix + "<answer> (tries: " + triesText + ", time: " + cfg.questionDurationSeconds + "s)"
-						+ " | Admin: /trivia hint off hides hint lines + wrong-guess broadcasts"
-						+ ", /trivia battle off hides wrong-guess broadcasts"
+						+ " | Admin: /trivia hint off hides hint lines"
+						+ ", /trivia battle off disables wrong-guess broadcasts"
+						+ ", /trivia battle name off hides the guesser name"
 						+ ", /trivia disable stops trivia"
 				),
 				false

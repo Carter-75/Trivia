@@ -6,6 +6,7 @@
 	"answerPrefix": ".",
 	"showAnswerInstructions": true,
 	"battleModeWrongGuessBroadcast": true,
+	"battleModeShowWrongGuesserName": true,
 	"rewardCountOverride": -1,
 	"punishEffectDurationSecondsMin": 10,
 	"punishEffectDurationSecondsMax": 600,

@@ -32,6 +32,7 @@ public final class TriviaCommands {
 								"Trivia enabled: " + cfg.enabled
 									+ " | hint line: " + (cfg.showAnswerInstructions ? "ON" : "OFF")
 									+ " | battle: " + (cfg.battleModeWrongGuessBroadcast ? "ON" : "OFF")
+									+ " | battle name: " + (cfg.battleModeShowWrongGuesserName ? "ON" : "OFF")
 									+ " | rewardCountOverride: " + cfg.rewardCountOverride
 							),
 							false
@@ -51,6 +52,20 @@ public final class TriviaCommands {
 							TriviaConfig cfg = TriviaConfigManager.getConfig();
 							return setBattleMode(ctx.getSource(), game, !cfg.battleModeWrongGuessBroadcast);
 						})
+					)
+					.then(CommandManager.literal("name")
+						.then(CommandManager.literal("on")
+							.executes(ctx -> setBattleName(ctx.getSource(), game, true))
+						)
+						.then(CommandManager.literal("off")
+							.executes(ctx -> setBattleName(ctx.getSource(), game, false))
+						)
+						.then(CommandManager.literal("toggle")
+							.executes(ctx -> {
+								TriviaConfig cfg = TriviaConfigManager.getConfig();
+								return setBattleName(ctx.getSource(), game, !cfg.battleModeShowWrongGuesserName);
+							})
+						)
 					)
 				)
 				.then(CommandManager.literal("hint")
@@ -181,6 +196,31 @@ public final class TriviaCommands {
 		} catch (Exception e) {
 			TriviaMod.LOGGER.error("Trivia battle toggle failed", e);
 			source.sendError(Text.literal("Trivia battle toggle failed: " + e.getMessage()));
+			return 0;
+		}
+	}
+
+	private static int setBattleName(ServerCommandSource source, TriviaGame game, boolean battleModeShowWrongGuesserName) {
+		try {
+			TriviaConfig cfg = TriviaConfigManager.getConfig();
+			if (cfg.battleModeShowWrongGuesserName == battleModeShowWrongGuesserName) {
+				source.sendFeedback(
+					() -> Text.literal("Trivia battle name display already " + (battleModeShowWrongGuesserName ? "ON" : "OFF") + "."),
+					false
+				);
+				return 1;
+			}
+			cfg.battleModeShowWrongGuesserName = battleModeShowWrongGuesserName;
+			TriviaConfigManager.saveConfig(cfg);
+			game.reloadFromDisk();
+			source.sendFeedback(
+				() -> Text.literal("Trivia battle name display is now " + (battleModeShowWrongGuesserName ? "ON" : "OFF") + "."),
+				true
+			);
+			return 1;
+		} catch (Exception e) {
+			TriviaMod.LOGGER.error("Trivia battle name toggle failed", e);
+			source.sendError(Text.literal("Trivia battle name toggle failed: " + e.getMessage()));
 			return 0;
 		}
 	}
