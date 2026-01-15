@@ -123,6 +123,8 @@ class UniversalBuildSystem:
                 "maxAttempts",
                 "answerPrefix",
                 "showAnswerInstructions",
+                "battleModeWrongGuessBroadcast",
+                "rewardCountOverride",
                 "punishEffectDurationSecondsMin",
                 "punishEffectDurationSecondsMax",
                 "punishEffectAmplifierMin",

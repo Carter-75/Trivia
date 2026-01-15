@@ -5,6 +5,8 @@
 	"maxAttempts": 3,
 	"answerPrefix": ".",
 	"showAnswerInstructions": true,
+	"battleModeWrongGuessBroadcast": true,
+	"rewardCountOverride": -1,
 	"punishEffectDurationSecondsMin": 10,
 	"punishEffectDurationSecondsMax": 600,
 	"punishEffectAmplifierMin": 1,

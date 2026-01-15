@@ -94,6 +94,11 @@ public final class TriviaGame {
 		}
 
 		String prefix = cfg.answerPrefix == null ? "." : cfg.answerPrefix;
+		if (rawMessage == null || rawMessage.length() < prefix.length() || !rawMessage.startsWith(prefix)) {
+			return false;
+		}
+
+		String guessDisplay = rawMessage.substring(prefix.length()).stripTrailing();
 		String guess = rawMessage.substring(prefix.length());
 		// Requirement: trim ending spaces; ignore capitalization.
 		guess = normalizeAnswer(guess);
@@ -119,8 +124,18 @@ public final class TriviaGame {
 		boolean correct = correctAnswer.equals(guess);
 		if (correct) {
 			ps.solved = true;
-			rewarder.reward(player, rng);
+			TriviaRewarder.RewardResult reward = rewarder.reward(player, rng);
+			if (reward != null) {
+				ps.rewardCount = reward.count();
+				ps.rewardItemName = reward.itemName();
+			}
 			player.sendMessage(Text.literal("Trivia: correct. Answer: " + correctAnswer), false);
+			if (reward != null) {
+				player.sendMessage(Text.literal("Trivia: reward: " + reward.count() + "x " + reward.itemName()), false);
+			} else {
+				player.sendMessage(Text.literal("Trivia: reward pool is empty."), false);
+			}
+			player.getServer().getPlayerManager().broadcast(Text.literal("Trivia: " + player.getName().getString() + " guessed correctly!"), false);
 			return true;
 		}
 
@@ -129,6 +144,13 @@ public final class TriviaGame {
 			ps.failed = true;
 			punisher.punish(player, cfg, rng, "max attempts");
 			return true;
+		}
+
+		if (cfg.battleModeWrongGuessBroadcast && cfg.showAnswerInstructions) {
+			player.getServer().getPlayerManager().broadcast(
+				Text.literal("Trivia: " + player.getName().getString() + "'s guess of " + guessDisplay + " was wrong."),
+				false
+			);
 		}
 
 		String triesLeft = (cfg.maxAttempts < 0)
@@ -168,7 +190,9 @@ public final class TriviaGame {
 			server.getPlayerManager().broadcast(
 				Text.literal(
 					"Answer with " + cfg.answerPrefix + "<answer> (tries: " + triesText + ", time: " + cfg.questionDurationSeconds + "s)"
-						+ " | Admin: /trivia hint off to hide this line, /trivia disable to stop trivia"
+						+ " | Admin: /trivia hint off hides hint lines + wrong-guess broadcasts"
+						+ ", /trivia battle off hides wrong-guess broadcasts"
+						+ ", /trivia disable stops trivia"
 				),
 				false
 			);
@@ -180,6 +204,19 @@ public final class TriviaGame {
 		String answer = (round.activeQuestion != null && round.activeQuestion.answer != null)
 			? round.activeQuestion.answer.stripTrailing()
 			: "";
+
+		// Winner summary (rewards are granted immediately on correct guess).
+		List<String> winners = new java.util.ArrayList<>();
+		for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+			TriviaPlayerState ps = round.playerStates.get(player.getUuid());
+			if (ps == null || !ps.solved) {
+				continue;
+			}
+			String rewardText = (ps.rewardItemName != null && !ps.rewardItemName.isBlank() && ps.rewardCount > 0)
+				? (ps.rewardCount + "x " + ps.rewardItemName)
+				: "reward";
+			winners.add(player.getName().getString() + " (" + rewardText + ")");
+		}
 
 		// Apply timeout punishments
 		for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
@@ -198,6 +235,11 @@ public final class TriviaGame {
 		}
 
 		server.getPlayerManager().broadcast(Text.literal("Trivia: time is up. Answer: " + answer), false);
+		if (!winners.isEmpty()) {
+			server.getPlayerManager().broadcast(Text.literal("Trivia: winners: " + String.join(", ", winners)), false);
+		} else {
+			server.getPlayerManager().broadcast(Text.literal("Trivia: nobody guessed correctly."), false);
+		}
 		resetToCooldown();
 	}
 

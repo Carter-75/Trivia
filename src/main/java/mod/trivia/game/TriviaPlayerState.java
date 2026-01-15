@@ -5,4 +5,6 @@ public final class TriviaPlayerState {
 	public boolean guessedOnce;
 	public boolean solved;
 	public boolean failed;
+	public int rewardCount;
+	public String rewardItemName;
 }

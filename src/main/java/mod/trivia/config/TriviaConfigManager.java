@@ -66,6 +66,14 @@ public final class TriviaConfigManager {
 						cfg.showAnswerInstructions = true;
 						changed = true;
 					}
+					if (!obj.has("battleModeWrongGuessBroadcast")) {
+						cfg.battleModeWrongGuessBroadcast = true;
+						changed = true;
+					}
+					if (!obj.has("rewardCountOverride")) {
+						cfg.rewardCountOverride = -1;
+						changed = true;
+					}
 				}
 			} catch (Exception ignored) {
 				// If the JSON isn't parseable here, the outer try/catch will handle it.

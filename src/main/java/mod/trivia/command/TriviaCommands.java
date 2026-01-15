@@ -28,11 +28,30 @@ public final class TriviaCommands {
 					.executes(ctx -> {
 						TriviaConfig cfg = TriviaConfigManager.getConfig();
 						ctx.getSource().sendFeedback(
-							() -> Text.literal("Trivia enabled: " + cfg.enabled + " | hint line: " + (cfg.showAnswerInstructions ? "ON" : "OFF")),
+							() -> Text.literal(
+								"Trivia enabled: " + cfg.enabled
+									+ " | hint line: " + (cfg.showAnswerInstructions ? "ON" : "OFF")
+									+ " | battle: " + (cfg.battleModeWrongGuessBroadcast ? "ON" : "OFF")
+									+ " | rewardCountOverride: " + cfg.rewardCountOverride
+							),
 							false
 						);
 						return 1;
 					})
+				)
+				.then(CommandManager.literal("battle")
+					.then(CommandManager.literal("on")
+						.executes(ctx -> setBattleMode(ctx.getSource(), game, true))
+					)
+					.then(CommandManager.literal("off")
+						.executes(ctx -> setBattleMode(ctx.getSource(), game, false))
+					)
+					.then(CommandManager.literal("toggle")
+						.executes(ctx -> {
+							TriviaConfig cfg = TriviaConfigManager.getConfig();
+							return setBattleMode(ctx.getSource(), game, !cfg.battleModeWrongGuessBroadcast);
+						})
+					)
 				)
 				.then(CommandManager.literal("hint")
 					.then(CommandManager.literal("on")
@@ -137,6 +156,31 @@ public final class TriviaCommands {
 		} catch (Exception e) {
 			TriviaMod.LOGGER.error("Trivia hint toggle failed", e);
 			source.sendError(Text.literal("Trivia hint toggle failed: " + e.getMessage()));
+			return 0;
+		}
+	}
+
+	private static int setBattleMode(ServerCommandSource source, TriviaGame game, boolean battleModeWrongGuessBroadcast) {
+		try {
+			TriviaConfig cfg = TriviaConfigManager.getConfig();
+			if (cfg.battleModeWrongGuessBroadcast == battleModeWrongGuessBroadcast) {
+				source.sendFeedback(
+					() -> Text.literal("Trivia battle mode already " + (battleModeWrongGuessBroadcast ? "ON" : "OFF") + "."),
+					false
+				);
+				return 1;
+			}
+			cfg.battleModeWrongGuessBroadcast = battleModeWrongGuessBroadcast;
+			TriviaConfigManager.saveConfig(cfg);
+			game.reloadFromDisk();
+			source.sendFeedback(
+				() -> Text.literal("Trivia battle mode is now " + (battleModeWrongGuessBroadcast ? "ON" : "OFF") + "."),
+				true
+			);
+			return 1;
+		} catch (Exception e) {
+			TriviaMod.LOGGER.error("Trivia battle toggle failed", e);
+			source.sendError(Text.literal("Trivia battle toggle failed: " + e.getMessage()));
 			return 0;
 		}
 	}

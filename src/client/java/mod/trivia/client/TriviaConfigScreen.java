@@ -20,6 +20,7 @@ public final class TriviaConfigScreen extends Screen {
 	private TextFieldWidget effectMaxSeconds;
 	private TextFieldWidget effectMinPower;
 	private TextFieldWidget effectMaxPower;
+	private TextFieldWidget rewardCountOverride;
 	private TextFieldWidget itemBlacklist;
 
 	public TriviaConfigScreen(Screen parent) {
@@ -49,6 +50,12 @@ public final class TriviaConfigScreen extends Screen {
 		}).dimensions(this.width / 2 - 140, y, w, h).build());
 		y += gap;
 
+		this.addDrawableChild(ButtonWidget.builder(battleLabel(this.working.battleModeWrongGuessBroadcast), btn -> {
+			this.working.battleModeWrongGuessBroadcast = !this.working.battleModeWrongGuessBroadcast;
+			btn.setMessage(battleLabel(this.working.battleModeWrongGuessBroadcast));
+		}).dimensions(this.width / 2 - 140, y, w, h).build());
+		y += gap;
+
 		this.maxAttempts = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Max Attempts (-1 = unlimited)"));
 		this.maxAttempts.setText(Integer.toString(working.maxAttempts));
 		this.addDrawableChild(this.maxAttempts);
@@ -62,6 +69,11 @@ public final class TriviaConfigScreen extends Screen {
 		this.cooldownSeconds = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Cooldown Seconds"));
 		this.cooldownSeconds.setText(Integer.toString(working.cooldownSeconds));
 		this.addDrawableChild(this.cooldownSeconds);
+		y += gap;
+
+		this.rewardCountOverride = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Reward Count Override (-1 = random)"));
+		this.rewardCountOverride.setText(Integer.toString(working.rewardCountOverride));
+		this.addDrawableChild(this.rewardCountOverride);
 		y += gap;
 
 		this.effectMinSeconds = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Effect Min Seconds"));
@@ -97,9 +109,11 @@ public final class TriviaConfigScreen extends Screen {
 					? "."
 					: this.working.answerPrefix;
 				cfg.showAnswerInstructions = this.working.showAnswerInstructions;
+				cfg.battleModeWrongGuessBroadcast = this.working.battleModeWrongGuessBroadcast;
 				cfg.maxAttempts = parseInt(this.maxAttempts.getText(), working.maxAttempts);
 				cfg.questionDurationSeconds = parseInt(this.questionSeconds.getText(), working.questionDurationSeconds);
 				cfg.cooldownSeconds = parseInt(this.cooldownSeconds.getText(), working.cooldownSeconds);
+				cfg.rewardCountOverride = parseInt(this.rewardCountOverride.getText(), working.rewardCountOverride);
 				cfg.punishEffectDurationSecondsMin = parseInt(this.effectMinSeconds.getText(), working.punishEffectDurationSecondsMin);
 				cfg.punishEffectDurationSecondsMax = parseInt(this.effectMaxSeconds.getText(), working.punishEffectDurationSecondsMax);
 				cfg.punishEffectAmplifierMin = parseInt(this.effectMinPower.getText(), working.punishEffectAmplifierMin);
@@ -132,6 +146,10 @@ public final class TriviaConfigScreen extends Screen {
 		return Text.literal("Hint line (Answer with <prefix><answer>): " + (show ? "ON" : "OFF"));
 	}
 
+	private static Text battleLabel(boolean enabled) {
+		return Text.literal("Battle mode wrong-guess broadcast: " + (enabled ? "ON" : "OFF"));
+	}
+
 	private static List<String> splitCsv(String csv) {
 		if (csv == null || csv.isBlank()) {
 			return List.of("minecraft:air");
@@ -162,9 +180,13 @@ public final class TriviaConfigScreen extends Screen {
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Answer in chat using: <prefix><answer> (default prefix is '.')"), helpX, helpY, 0xAAAAAA);
 		helpY += line;
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Admin commands: /trivia enable|disable|toggle|status|reload|ask|hint"), helpX, helpY, 0xAAAAAA);
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Admin commands: /trivia enable|disable|toggle|status|reload|ask|hint|battle"), helpX, helpY, 0xAAAAAA);
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Hint OFF hides the 'Answer with ...' line (question still broadcasts)."), helpX, helpY, 0xAAAAAA);
+		helpY += line;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Battle mode broadcasts wrong guesses globally (can be disabled)."), helpX, helpY, 0xAAAAAA);
+		helpY += line;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Reward Count Override: -1=random, otherwise fixed (capped by item stack size)."), helpX, helpY, 0xAAAAAA);
 
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Edits apply on the server; run /trivia reload to apply immediately."), 10, this.height - 20, 0xAAAAAA);
 		super.render(context, mouseX, mouseY, delta);

@@ -7,9 +7,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
@@ -19,9 +17,15 @@ import java.util.Set;
 import java.util.random.RandomGenerator;
 
 public final class TriviaRewarder {
+	public record RewardResult(int count, String itemName) {
+	}
+
 	private List<Item> rewardPool = List.of();
+	private int rewardCountOverride = -1;
 
 	public void rebuildPools(TriviaConfig cfg) {
+		this.rewardCountOverride = cfg != null ? cfg.rewardCountOverride : -1;
+
 		Set<Identifier> blacklist = new HashSet<>();
 		for (String raw : cfg.itemBlacklist) {
 			try {
@@ -45,10 +49,9 @@ public final class TriviaRewarder {
 		TriviaMod.LOGGER.info("Trivia reward pool: {} items (blacklist: {})", this.rewardPool.size(), blacklist.size());
 	}
 
-	public void reward(ServerPlayerEntity player, RandomGenerator rng) {
+	public RewardResult reward(ServerPlayerEntity player, RandomGenerator rng) {
 		if (rewardPool.isEmpty()) {
-			player.sendMessage(Text.literal("Trivia: reward pool is empty."), false);
-			return;
+			return null;
 		}
 		Item item = RandomUtil.pick(rewardPool, rng);
 		ItemStack preview = new ItemStack(item);
@@ -56,18 +59,19 @@ public final class TriviaRewarder {
 		if (maxStack < 1) {
 			maxStack = 1;
 		}
-		int count = rng.nextInt(maxStack) + 1;
+		int count;
+		int override = this.rewardCountOverride;
+		if (override <= 0) {
+			count = rng.nextInt(maxStack) + 1;
+		} else {
+			count = Math.min(override, maxStack);
+		}
 		ItemStack stack = new ItemStack(item, count);
 		player.getInventory().insertStack(stack);
-		int droppedCount = 0;
 		if (!stack.isEmpty()) {
-			droppedCount = stack.getCount();
 			player.dropItem(stack, false);
 		}
-		Identifier id = Registries.ITEM.getId(item);
-		String idText = (id != null) ? id.toString() : "unknown";
 		String nameText = preview.getName().getString();
-		String dropSuffix = (droppedCount > 0) ? (" (dropped " + droppedCount + " due to full inventory)") : "";
-		player.sendMessage(Text.literal("Trivia: reward: " + count + "x " + idText + " (" + nameText + ")" + dropSuffix), false);
+		return new RewardResult(count, nameText);
 	}
 }
