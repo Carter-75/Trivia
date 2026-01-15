@@ -193,7 +193,7 @@ public final class TriviaConfigScreen extends Screen {
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Admin commands: /trivia enable|disable|toggle|status|reload|ask|hint|battle"), helpX, helpY, 0xAAAAAA);
 		helpY += line;
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Hint OFF hides the 'Answer with ...' line (question still broadcasts)."), helpX, helpY, 0xAAAAAA);
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Hint OFF hides the 'Answer with ...' line and removes extra hints from battle messages."), helpX, helpY, 0xAAAAAA);
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Battle mode broadcasts wrong guesses globally (can be disabled)."), helpX, helpY, 0xAAAAAA);
 		helpY += line;

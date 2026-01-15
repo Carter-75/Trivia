@@ -31,11 +31,18 @@ public final class TriviaMod implements ModInitializer {
 			if (!(sender instanceof ServerPlayerEntity player)) {
 				return true;
 			}
+			if (!TriviaConfigManager.getConfig().enabled) {
+				return true;
+			}
 			String raw = message.getContent().getString();
 			if (raw == null || raw.isEmpty()) {
 				return true;
 			}
-			if (!raw.startsWith(TriviaConfigManager.getConfig().answerPrefix)) {
+			String prefix = TriviaConfigManager.getConfig().answerPrefix;
+			if (prefix == null || prefix.isBlank()) {
+				prefix = ".";
+			}
+			if (!raw.startsWith(prefix)) {
 				return true;
 			}
 			boolean handled = GAME.onPlayerAttempt(player, raw);
