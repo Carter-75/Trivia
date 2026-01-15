@@ -135,7 +135,15 @@ public final class TriviaGame {
 			} else {
 				player.sendMessage(Text.literal("Trivia: reward pool is empty."), false);
 			}
-			player.getServer().getPlayerManager().broadcast(Text.literal("Trivia: " + player.getName().getString() + " guessed correctly!"), false);
+			if (cfg.announceCorrectGuesses) {
+				String suffix = cfg.showAnswerInstructions
+					? " Hint: /trivia announce off, /trivia hint off"
+					: "";
+				player.getServer().getPlayerManager().broadcast(
+					Text.literal("Trivia: " + player.getName().getString() + " guessed correctly!" + suffix),
+					false
+				);
+			}
 			return true;
 		}
 
@@ -196,6 +204,7 @@ public final class TriviaGame {
 						+ " | Admin: /trivia hint off hides hint lines"
 						+ ", /trivia battle off disables wrong-guess broadcasts"
 						+ ", /trivia battle name off hides the guesser name"
+						+ ", /trivia announce off hides correct-guess broadcasts"
 						+ ", /trivia disable stops trivia"
 				),
 				false

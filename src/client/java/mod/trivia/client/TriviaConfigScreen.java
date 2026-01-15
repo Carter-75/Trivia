@@ -50,6 +50,12 @@ public final class TriviaConfigScreen extends Screen {
 		}).dimensions(this.width / 2 - 140, y, w, h).build());
 		y += gap;
 
+		this.addDrawableChild(ButtonWidget.builder(announceLabel(this.working.announceCorrectGuesses), btn -> {
+			this.working.announceCorrectGuesses = !this.working.announceCorrectGuesses;
+			btn.setMessage(announceLabel(this.working.announceCorrectGuesses));
+		}).dimensions(this.width / 2 - 140, y, w, h).build());
+		y += gap;
+
 		this.addDrawableChild(ButtonWidget.builder(battleLabel(this.working.battleModeWrongGuessBroadcast), btn -> {
 			this.working.battleModeWrongGuessBroadcast = !this.working.battleModeWrongGuessBroadcast;
 			btn.setMessage(battleLabel(this.working.battleModeWrongGuessBroadcast));
@@ -115,6 +121,7 @@ public final class TriviaConfigScreen extends Screen {
 					? "."
 					: this.working.answerPrefix;
 				cfg.showAnswerInstructions = this.working.showAnswerInstructions;
+				cfg.announceCorrectGuesses = this.working.announceCorrectGuesses;
 				cfg.battleModeWrongGuessBroadcast = this.working.battleModeWrongGuessBroadcast;
 				cfg.battleModeShowWrongGuesserName = this.working.battleModeShowWrongGuesserName;
 				cfg.maxAttempts = parseInt(this.maxAttempts.getText(), working.maxAttempts);
@@ -151,6 +158,10 @@ public final class TriviaConfigScreen extends Screen {
 
 	private static Text instructionsLabel(boolean show) {
 		return Text.literal("Hint line (Answer with <prefix><answer>): " + (show ? "ON" : "OFF"));
+	}
+
+	private static Text announceLabel(boolean enabled) {
+		return Text.literal("Announce correct guesses globally: " + (enabled ? "ON" : "OFF"));
 	}
 
 	private static Text battleLabel(boolean enabled) {
@@ -191,7 +202,7 @@ public final class TriviaConfigScreen extends Screen {
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Answer in chat using: <prefix><answer> (default prefix is '.')"), helpX, helpY, 0xAAAAAA);
 		helpY += line;
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Admin commands: /trivia enable|disable|toggle|status|reload|ask|hint|battle"), helpX, helpY, 0xAAAAAA);
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Admin commands: /trivia enable|disable|toggle|status|reload|ask|hint|announce|battle"), helpX, helpY, 0xAAAAAA);
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Hint OFF hides the 'Answer with ...' line and removes extra hints from battle messages."), helpX, helpY, 0xAAAAAA);
 		helpY += line;

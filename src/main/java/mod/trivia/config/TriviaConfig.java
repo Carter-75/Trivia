@@ -18,6 +18,12 @@ public final class TriviaConfig {
 	public boolean showAnswerInstructions = true;
 
 	/**
+	 * When enabled, broadcasts a global message when someone guesses correctly ("<player> guessed correctly!").
+	 * Private reward messages are unaffected.
+	 */
+	public boolean announceCorrectGuesses = true;
+
+	/**
 	 * When enabled, wrong guesses are broadcast globally ("<player>'s guess of <guess> was wrong").
 	 * Note: when showAnswerInstructions is OFF, the broadcast remains but the extra hint suffix is omitted.
 	 */

@@ -5,6 +5,7 @@
 	"maxAttempts": 3,
 	"answerPrefix": ".",
 	"showAnswerInstructions": true,
+	"announceCorrectGuesses": true,
 	"battleModeWrongGuessBroadcast": true,
 	"battleModeShowWrongGuesserName": true,
 	"rewardCountOverride": -1,

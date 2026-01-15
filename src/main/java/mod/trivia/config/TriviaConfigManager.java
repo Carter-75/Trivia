@@ -66,6 +66,10 @@ public final class TriviaConfigManager {
 						cfg.showAnswerInstructions = true;
 						changed = true;
 					}
+					if (!obj.has("announceCorrectGuesses")) {
+						cfg.announceCorrectGuesses = true;
+						changed = true;
+					}
 					if (!obj.has("battleModeWrongGuessBroadcast")) {
 						cfg.battleModeWrongGuessBroadcast = true;
 						changed = true;

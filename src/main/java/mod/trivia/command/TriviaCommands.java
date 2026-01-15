@@ -31,6 +31,7 @@ public final class TriviaCommands {
 							() -> Text.literal(
 								"Trivia enabled: " + cfg.enabled
 									+ " | hint line: " + (cfg.showAnswerInstructions ? "ON" : "OFF")
+									+ " | announce: " + (cfg.announceCorrectGuesses ? "ON" : "OFF")
 									+ " | battle: " + (cfg.battleModeWrongGuessBroadcast ? "ON" : "OFF")
 									+ " | battle name: " + (cfg.battleModeShowWrongGuesserName ? "ON" : "OFF")
 									+ " | rewardCountOverride: " + cfg.rewardCountOverride
@@ -39,6 +40,20 @@ public final class TriviaCommands {
 						);
 						return 1;
 					})
+				)
+				.then(CommandManager.literal("announce")
+					.then(CommandManager.literal("on")
+						.executes(ctx -> setAnnounce(ctx.getSource(), game, true))
+					)
+					.then(CommandManager.literal("off")
+						.executes(ctx -> setAnnounce(ctx.getSource(), game, false))
+					)
+					.then(CommandManager.literal("toggle")
+						.executes(ctx -> {
+							TriviaConfig cfg = TriviaConfigManager.getConfig();
+							return setAnnounce(ctx.getSource(), game, !cfg.announceCorrectGuesses);
+						})
+					)
 				)
 				.then(CommandManager.literal("battle")
 					.then(CommandManager.literal("on")
@@ -221,6 +236,31 @@ public final class TriviaCommands {
 		} catch (Exception e) {
 			TriviaMod.LOGGER.error("Trivia battle name toggle failed", e);
 			source.sendError(Text.literal("Trivia battle name toggle failed: " + e.getMessage()));
+			return 0;
+		}
+	}
+
+	private static int setAnnounce(ServerCommandSource source, TriviaGame game, boolean announceCorrectGuesses) {
+		try {
+			TriviaConfig cfg = TriviaConfigManager.getConfig();
+			if (cfg.announceCorrectGuesses == announceCorrectGuesses) {
+				source.sendFeedback(
+					() -> Text.literal("Trivia correct-guess announce already " + (announceCorrectGuesses ? "ON" : "OFF") + "."),
+					false
+				);
+				return 1;
+			}
+			cfg.announceCorrectGuesses = announceCorrectGuesses;
+			TriviaConfigManager.saveConfig(cfg);
+			game.reloadFromDisk();
+			source.sendFeedback(
+				() -> Text.literal("Trivia correct-guess announce is now " + (announceCorrectGuesses ? "ON" : "OFF") + "."),
+				true
+			);
+			return 1;
+		} catch (Exception e) {
+			TriviaMod.LOGGER.error("Trivia announce toggle failed", e);
+			source.sendError(Text.literal("Trivia announce toggle failed: " + e.getMessage()));
 			return 0;
 		}
 	}

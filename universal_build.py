@@ -123,6 +123,7 @@ class UniversalBuildSystem:
                 "maxAttempts",
                 "answerPrefix",
                 "showAnswerInstructions",
+                "announceCorrectGuesses",
                 "battleModeWrongGuessBroadcast",
                 "battleModeShowWrongGuesserName",
                 "rewardCountOverride",
