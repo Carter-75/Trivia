@@ -15,6 +15,7 @@ public final class TriviaConfig {
 	 */
 	public int maxAttempts = 3;
 	public String answerPrefix = ".";
+	public boolean showAnswerInstructions = true;
 
 	public int punishEffectDurationSecondsMin = 10;
 	public int punishEffectDurationSecondsMax = 600;

@@ -122,6 +122,7 @@ class UniversalBuildSystem:
                 "cooldownSeconds",
                 "maxAttempts",
                 "answerPrefix",
+                "showAnswerInstructions",
                 "punishEffectDurationSecondsMin",
                 "punishEffectDurationSecondsMax",
                 "punishEffectAmplifierMin",

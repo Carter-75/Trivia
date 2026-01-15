@@ -43,6 +43,12 @@ public final class TriviaConfigScreen extends Screen {
 		}).dimensions(this.width / 2 - 140, y, w, h).build());
 		y += gap;
 
+		this.addDrawableChild(ButtonWidget.builder(instructionsLabel(this.working.showAnswerInstructions), btn -> {
+			this.working.showAnswerInstructions = !this.working.showAnswerInstructions;
+			btn.setMessage(instructionsLabel(this.working.showAnswerInstructions));
+		}).dimensions(this.width / 2 - 140, y, w, h).build());
+		y += gap;
+
 		this.maxAttempts = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Max Attempts (-1 = unlimited)"));
 		this.maxAttempts.setText(Integer.toString(working.maxAttempts));
 		this.addDrawableChild(this.maxAttempts);
@@ -90,6 +96,7 @@ public final class TriviaConfigScreen extends Screen {
 				cfg.answerPrefix = (this.working.answerPrefix == null || this.working.answerPrefix.isBlank())
 					? "."
 					: this.working.answerPrefix;
+				cfg.showAnswerInstructions = this.working.showAnswerInstructions;
 				cfg.maxAttempts = parseInt(this.maxAttempts.getText(), working.maxAttempts);
 				cfg.questionDurationSeconds = parseInt(this.questionSeconds.getText(), working.questionDurationSeconds);
 				cfg.cooldownSeconds = parseInt(this.cooldownSeconds.getText(), working.cooldownSeconds);
@@ -121,6 +128,10 @@ public final class TriviaConfigScreen extends Screen {
 		return Text.literal("Enabled: " + (enabled ? "ON" : "OFF"));
 	}
 
+	private static Text instructionsLabel(boolean show) {
+		return Text.literal("Hint line (Answer with <prefix><answer>): " + (show ? "ON" : "OFF"));
+	}
+
 	private static List<String> splitCsv(String csv) {
 		if (csv == null || csv.isBlank()) {
 			return List.of("minecraft:air");
@@ -141,7 +152,21 @@ public final class TriviaConfigScreen extends Screen {
 	public void render(net.minecraft.client.gui.DrawContext context, int mouseX, int mouseY, float delta) {
 		this.renderBackground(context, mouseX, mouseY, delta);
 		context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 15, 0xFFFFFF);
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Edit the server config; run /trivia reload on the server to apply."), 10, this.height - 20, 0xAAAAAA);
+
+		int helpX = 10;
+		int helpY = 22;
+		int line = 10;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Server-side trivia events (works in singleplayer too)."), helpX, helpY, 0xAAAAAA);
+		helpY += line;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("A random question broadcasts after each cooldown."), helpX, helpY, 0xAAAAAA);
+		helpY += line;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Answer in chat using: <prefix><answer> (default prefix is '.')"), helpX, helpY, 0xAAAAAA);
+		helpY += line;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Admin commands: /trivia enable|disable|toggle|status|reload|ask|hint"), helpX, helpY, 0xAAAAAA);
+		helpY += line;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Hint OFF hides the 'Answer with ...' line (question still broadcasts)."), helpX, helpY, 0xAAAAAA);
+
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Edits apply on the server; run /trivia reload to apply immediately."), 10, this.height - 20, 0xAAAAAA);
 		super.render(context, mouseX, mouseY, delta);
 	}
 }

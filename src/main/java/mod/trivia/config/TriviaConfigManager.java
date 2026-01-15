@@ -2,6 +2,9 @@ package mod.trivia.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import mod.trivia.TriviaMod;
 import net.fabricmc.loader.api.FabricLoader;
 
@@ -49,10 +52,30 @@ public final class TriviaConfigManager {
 			if (Files.notExists(file)) {
 				writeDefaultResource(DEFAULT_SETTINGS_RESOURCE, file);
 			}
-			try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-				TriviaConfig loaded = GSON.fromJson(reader, TriviaConfig.class);
-				return loaded != null ? loaded : new TriviaConfig();
+			String json = Files.readString(file, StandardCharsets.UTF_8);
+			TriviaConfig loaded = GSON.fromJson(json, TriviaConfig.class);
+			TriviaConfig cfg = loaded != null ? loaded : new TriviaConfig();
+
+			// Migrate older configs: if the key is missing, default to showing the instruction line.
+			boolean changed = false;
+			try {
+				JsonElement root = JsonParser.parseString(json);
+				if (root != null && root.isJsonObject()) {
+					JsonObject obj = root.getAsJsonObject();
+					if (!obj.has("showAnswerInstructions")) {
+						cfg.showAnswerInstructions = true;
+						changed = true;
+					}
+				}
+			} catch (Exception ignored) {
+				// If the JSON isn't parseable here, the outer try/catch will handle it.
 			}
+
+			if (changed) {
+				Files.writeString(file, GSON.toJson(cfg), StandardCharsets.UTF_8);
+			}
+
+			return cfg;
 		} catch (Exception e) {
 			TriviaMod.LOGGER.error("Failed to load config; using defaults", e);
 			return new TriviaConfig();

@@ -64,6 +64,26 @@ public final class TriviaGame {
 		}
 	}
 
+	/**
+	 * Forces a new random question to start immediately if (and only if) no question is active.
+	 * This skips any remaining cooldown. When the forced round ends, the cooldown restarts normally.
+	 */
+	public boolean forceStartRandomQuestionIfIdle(MinecraftServer server) {
+		TriviaConfig cfg = TriviaConfigManager.getConfig();
+		if (!cfg.enabled) {
+			return false;
+		}
+		if (phase == Phase.ACTIVE && round.activeQuestion != null) {
+			return false;
+		}
+
+		// Skip remaining cooldown and start immediately.
+		phase = Phase.COOLDOWN;
+		phaseTicksRemaining = 0;
+		startRound(server);
+		return phase == Phase.ACTIVE && round.activeQuestion != null;
+	}
+
 	public boolean onPlayerAttempt(ServerPlayerEntity player, String rawMessage) {
 		TriviaConfig cfg = TriviaConfigManager.getConfig();
 		if (!cfg.enabled) {
@@ -143,11 +163,16 @@ public final class TriviaGame {
 
 		String q = round.activeQuestion.question;
 		server.getPlayerManager().broadcast(Text.literal("Trivia: " + q), false);
-		String triesText = (cfg.maxAttempts < 0) ? "unlimited" : Integer.toString(cfg.maxAttempts);
-		server.getPlayerManager().broadcast(
-			Text.literal("Answer with " + cfg.answerPrefix + "<answer> (tries: " + triesText + ", time: " + cfg.questionDurationSeconds + "s)"),
-			false
-		);
+		if (cfg.showAnswerInstructions) {
+			String triesText = (cfg.maxAttempts < 0) ? "unlimited" : Integer.toString(cfg.maxAttempts);
+			server.getPlayerManager().broadcast(
+				Text.literal(
+					"Answer with " + cfg.answerPrefix + "<answer> (tries: " + triesText + ", time: " + cfg.questionDurationSeconds + "s)"
+						+ " | Admin: /trivia hint off to hide this line, /trivia disable to stop trivia"
+				),
+				false
+			);
+		}
 	}
 
 	private void endRound(MinecraftServer server) {

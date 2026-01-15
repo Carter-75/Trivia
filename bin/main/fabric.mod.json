@@ -1,0 +1,29 @@
+{
+	"schemaVersion": 1,
+	"id": "trivia",
+	"version": "${version}",
+	"name": "Trivia",
+	"description": "Server-side trivia with JSON questions, per-player attempts, rewards, and punishments.",
+	"authors": [
+		"Carter-75"
+	],
+	"license": "LicenseRef-Trivia-Attribution-NonCommercial-1.0",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"mod.trivia.TriviaMod"
+		],
+		"modmenu": [
+			"mod.trivia.client.TriviaModMenu"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}
