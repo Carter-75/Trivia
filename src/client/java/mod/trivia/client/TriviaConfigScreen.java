@@ -37,6 +37,12 @@ public final class TriviaConfigScreen extends Screen {
 		int h = 20;
 		int gap = 24;
 
+		this.addDrawableChild(ButtonWidget.builder(enabledLabel(this.working.enabled), btn -> {
+			this.working.enabled = !this.working.enabled;
+			btn.setMessage(enabledLabel(this.working.enabled));
+		}).dimensions(this.width / 2 - 140, y, w, h).build());
+		y += gap;
+
 		this.maxAttempts = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Max Attempts (-1 = unlimited)"));
 		this.maxAttempts.setText(Integer.toString(working.maxAttempts));
 		this.addDrawableChild(this.maxAttempts);
@@ -80,8 +86,10 @@ public final class TriviaConfigScreen extends Screen {
 		this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), btn -> {
 			try {
 				TriviaConfig cfg = new TriviaConfig();
-				cfg.enabled = true;
-				cfg.answerPrefix = ".";
+				cfg.enabled = this.working.enabled;
+				cfg.answerPrefix = (this.working.answerPrefix == null || this.working.answerPrefix.isBlank())
+					? "."
+					: this.working.answerPrefix;
 				cfg.maxAttempts = parseInt(this.maxAttempts.getText(), working.maxAttempts);
 				cfg.questionDurationSeconds = parseInt(this.questionSeconds.getText(), working.questionDurationSeconds);
 				cfg.cooldownSeconds = parseInt(this.cooldownSeconds.getText(), working.cooldownSeconds);
@@ -107,6 +115,10 @@ public final class TriviaConfigScreen extends Screen {
 		} catch (Exception e) {
 			return fallback;
 		}
+	}
+
+	private static Text enabledLabel(boolean enabled) {
+		return Text.literal("Enabled: " + (enabled ? "ON" : "OFF"));
 	}
 
 	private static List<String> splitCsv(String csv) {

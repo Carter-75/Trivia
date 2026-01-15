@@ -1,21 +1,76 @@
-MIT License
+TRIVIA LICENSE (CUSTOM) — ATTRIBUTION REQUIRED + NONCOMMERCIAL
+Version 1.0 — 2026-01-14
 
 Copyright (c) 2026 Carter-75
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Summary (non-binding)
+- Free to use and modify for noncommercial purposes.
+- You must give credit.
+- You may share modified versions for free (noncommercial) with credit.
+- You may not sell, monetize, or otherwise use modified copies for commercial gain.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+This Summary is provided for convenience only and does not replace the full
+license terms below.
 
+1. Definitions
+"Software" means the Trivia mod source code, binaries, assets, and documentation
+provided in this repository.
+
+"You" means any individual or entity exercising permissions under this license.
+
+"Modified Version" means any work based on or derived from the Software,
+including any fork, patch, port, reupload, refactor, or repackage that contains
+any portion of the Software.
+
+"Commercial Use" includes, without limitation:
+- Selling the Software or any Modified Version.
+- Charging money for access to the Software or any Modified Version.
+- Distributing the Software or any Modified Version behind a paywall.
+- Including the Software or any Modified Version in a product, service, or
+	bundle where payment is required to obtain it.
+- Using the Software or any Modified Version primarily intended for commercial
+	advantage or monetary compensation.
+
+2. Grant of Rights (Noncommercial)
+Subject to the restrictions in this license, You are granted a worldwide,
+royalty-free, non-exclusive license to:
+(a) Use the Software for noncommercial purposes.
+(b) Copy and distribute unmodified copies of the Software for noncommercial
+		purposes.
+(c) Create, use, and distribute Modified Versions for noncommercial purposes.
+
+3. Mandatory Attribution (Credit)
+Any distribution of the Software or a Modified Version must clearly and
+conspicuously include credit to the original author:
+
+- Credit text must include: "Trivia by Carter-75" (or substantially similar).
+- Credit must be visible in at least one of the following places:
+	(i) the project/mod page description, (ii) an in-game credits/about screen,
+	or (iii) a bundled documentation file shown to users.
+- If distributing source code, You must keep this LICENSE file and the original
+	copyright notice.
+- If distributing a Modified Version, You must state that it is modified and
+	You must not imply the original author endorses or supports it.
+
+4. Noncommercial Restriction
+You may not use, distribute, sublicense, sell, monetize, or otherwise exploit
+the Software or any Modified Version for Commercial Use.
+
+5. No Trademark Rights
+This license does not grant any rights to use any trademarks, service marks, or
+logos of the author except as necessary to provide the required credit.
+
+6. No Warranty
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+7. Limitation of Liability
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
+
+8. Contact for Commercial Licensing
+If You want to use the Software or a Modified Version commercially, you must
+obtain separate written permission from the author (Carter-75).
