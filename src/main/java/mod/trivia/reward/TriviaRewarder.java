@@ -51,12 +51,23 @@ public final class TriviaRewarder {
 			return;
 		}
 		Item item = RandomUtil.pick(rewardPool, rng);
-		ItemStack stack = new ItemStack(item, 1);
-		boolean inserted = player.getInventory().insertStack(stack);
-		if (!inserted && !stack.isEmpty()) {
+		ItemStack preview = new ItemStack(item);
+		int maxStack = preview.getMaxCount();
+		if (maxStack < 1) {
+			maxStack = 1;
+		}
+		int count = rng.nextInt(maxStack) + 1;
+		ItemStack stack = new ItemStack(item, count);
+		player.getInventory().insertStack(stack);
+		int droppedCount = 0;
+		if (!stack.isEmpty()) {
+			droppedCount = stack.getCount();
 			player.dropItem(stack, false);
 		}
 		Identifier id = Registries.ITEM.getId(item);
-		player.sendMessage(Text.literal("Trivia: reward: " + (id != null ? id.toString() : "unknown")), false);
+		String idText = (id != null) ? id.toString() : "unknown";
+		String nameText = preview.getName().getString();
+		String dropSuffix = (droppedCount > 0) ? (" (dropped " + droppedCount + " due to full inventory)") : "";
+		player.sendMessage(Text.literal("Trivia: reward: " + count + "x " + idText + " (" + nameText + ")" + dropSuffix), false);
 	}
 }
