@@ -1,0 +1,14 @@
+{
+	"enabled": true,
+	"questionDurationSeconds": 60,
+	"cooldownSeconds": 540,
+	"maxAttempts": 3,
+	"answerPrefix": ".",
+	"punishEffectDurationSecondsMin": 10,
+	"punishEffectDurationSecondsMax": 600,
+	"punishEffectAmplifierMin": 1,
+	"punishEffectAmplifierMax": 10,
+	"itemBlacklist": [
+		"minecraft:air"
+	]
+}

@@ -1,0 +1,22 @@
+# Gradle / build output
+.gradle/
+build/
+run/
+out/
+
+# Local Gradle user home used by universal_build.py
+.gradle-user-home/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.iml
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Fabric Loom caches (defensive)
+remapped_mods/
+loom-cache/

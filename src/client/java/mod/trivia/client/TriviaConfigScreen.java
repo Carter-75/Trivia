@@ -1,0 +1,135 @@
+package mod.trivia.client;
+
+import mod.trivia.config.TriviaConfig;
+import mod.trivia.config.TriviaConfigManager;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.text.Text;
+
+import java.util.List;
+
+public final class TriviaConfigScreen extends Screen {
+	private final Screen parent;
+	private TriviaConfig working;
+
+	private TextFieldWidget maxAttempts;
+	private TextFieldWidget questionSeconds;
+	private TextFieldWidget cooldownSeconds;
+	private TextFieldWidget effectMinSeconds;
+	private TextFieldWidget effectMaxSeconds;
+	private TextFieldWidget effectMinPower;
+	private TextFieldWidget effectMaxPower;
+	private TextFieldWidget itemBlacklist;
+
+	public TriviaConfigScreen(Screen parent) {
+		super(Text.literal("Trivia Config"));
+		this.parent = parent;
+	}
+
+	@Override
+	protected void init() {
+		this.working = TriviaConfigManager.getConfig();
+
+		int x = this.width / 2 - 140;
+		int y = 40;
+		int w = 280;
+		int h = 20;
+		int gap = 24;
+
+		this.maxAttempts = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Max Attempts (-1 = unlimited)"));
+		this.maxAttempts.setText(Integer.toString(working.maxAttempts));
+		this.addDrawableChild(this.maxAttempts);
+		y += gap;
+
+		this.questionSeconds = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Question Seconds"));
+		this.questionSeconds.setText(Integer.toString(working.questionDurationSeconds));
+		this.addDrawableChild(this.questionSeconds);
+		y += gap;
+
+		this.cooldownSeconds = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Cooldown Seconds"));
+		this.cooldownSeconds.setText(Integer.toString(working.cooldownSeconds));
+		this.addDrawableChild(this.cooldownSeconds);
+		y += gap;
+
+		this.effectMinSeconds = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Effect Min Seconds"));
+		this.effectMinSeconds.setText(Integer.toString(working.punishEffectDurationSecondsMin));
+		this.addDrawableChild(this.effectMinSeconds);
+		y += gap;
+
+		this.effectMaxSeconds = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Effect Max Seconds"));
+		this.effectMaxSeconds.setText(Integer.toString(working.punishEffectDurationSecondsMax));
+		this.addDrawableChild(this.effectMaxSeconds);
+		y += gap;
+
+		this.effectMinPower = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Effect Min Power (1-10)"));
+		this.effectMinPower.setText(Integer.toString(working.punishEffectAmplifierMin));
+		this.addDrawableChild(this.effectMinPower);
+		y += gap;
+
+		this.effectMaxPower = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Effect Max Power (1-10)"));
+		this.effectMaxPower.setText(Integer.toString(working.punishEffectAmplifierMax));
+		this.addDrawableChild(this.effectMaxPower);
+		y += gap;
+
+		this.itemBlacklist = new TextFieldWidget(this.textRenderer, x, y, w, h, Text.literal("Item Blacklist (comma-separated ids)"));
+		this.itemBlacklist.setText(String.join(",", working.itemBlacklist));
+		this.addDrawableChild(this.itemBlacklist);
+		y += gap + 10;
+
+		this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), btn -> {
+			try {
+				TriviaConfig cfg = new TriviaConfig();
+				cfg.enabled = true;
+				cfg.answerPrefix = ".";
+				cfg.maxAttempts = parseInt(this.maxAttempts.getText(), working.maxAttempts);
+				cfg.questionDurationSeconds = parseInt(this.questionSeconds.getText(), working.questionDurationSeconds);
+				cfg.cooldownSeconds = parseInt(this.cooldownSeconds.getText(), working.cooldownSeconds);
+				cfg.punishEffectDurationSecondsMin = parseInt(this.effectMinSeconds.getText(), working.punishEffectDurationSecondsMin);
+				cfg.punishEffectDurationSecondsMax = parseInt(this.effectMaxSeconds.getText(), working.punishEffectDurationSecondsMax);
+				cfg.punishEffectAmplifierMin = parseInt(this.effectMinPower.getText(), working.punishEffectAmplifierMin);
+				cfg.punishEffectAmplifierMax = parseInt(this.effectMaxPower.getText(), working.punishEffectAmplifierMax);
+				cfg.itemBlacklist = splitCsv(this.itemBlacklist.getText());
+				TriviaConfigManager.saveConfig(cfg);
+				this.client.setScreen(parent);
+			} catch (Exception e) {
+				// swallow: screen will stay open
+			}
+		}).dimensions(this.width / 2 - 140, y, 138, 20).build());
+
+		this.addDrawableChild(ButtonWidget.builder(Text.literal("Cancel"), btn -> this.client.setScreen(parent))
+			.dimensions(this.width / 2 + 2, y, 138, 20).build());
+	}
+
+	private static int parseInt(String value, int fallback) {
+		try {
+			return Integer.parseInt(value.trim());
+		} catch (Exception e) {
+			return fallback;
+		}
+	}
+
+	private static List<String> splitCsv(String csv) {
+		if (csv == null || csv.isBlank()) {
+			return List.of("minecraft:air");
+		}
+		return List.of(csv.split(","))
+			.stream()
+			.map(String::trim)
+			.filter(s -> !s.isEmpty())
+			.toList();
+	}
+
+	@Override
+	public void close() {
+		this.client.setScreen(parent);
+	}
+
+	@Override
+	public void render(net.minecraft.client.gui.DrawContext context, int mouseX, int mouseY, float delta) {
+		this.renderBackground(context, mouseX, mouseY, delta);
+		context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 15, 0xFFFFFF);
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Edit the server config; run /trivia reload on the server to apply."), 10, this.height - 20, 0xAAAAAA);
+		super.render(context, mouseX, mouseY, delta);
+	}
+}
