@@ -3,6 +3,8 @@
 build/
 run/
 out/
+bin/
+*.class
 
 # Local Gradle user home used by universal_build.py
 .gradle-user-home/
