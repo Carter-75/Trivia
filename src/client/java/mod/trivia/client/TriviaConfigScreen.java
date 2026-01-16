@@ -1,5 +1,6 @@
 package mod.trivia.client;
 
+import mod.trivia.TriviaMod;
 import mod.trivia.config.TriviaConfig;
 import mod.trivia.config.TriviaConfigManager;
 import net.minecraft.client.gui.screen.Screen;
@@ -30,7 +31,7 @@ public final class TriviaConfigScreen extends Screen {
 
 	@Override
 	protected void init() {
-		this.working = TriviaConfigManager.getConfig();
+		this.working = TriviaConfigManager.getConfig().copy();
 
 		int x = this.width / 2 - 140;
 		int y = 40;
@@ -136,7 +137,7 @@ public final class TriviaConfigScreen extends Screen {
 				TriviaConfigManager.saveConfig(cfg);
 				this.client.setScreen(parent);
 			} catch (Exception e) {
-				// swallow: screen will stay open
+				TriviaMod.LOGGER.error("Failed to save trivia config from config screen", e);
 			}
 		}).dimensions(this.width / 2 - 140, y, 138, 20).build());
 

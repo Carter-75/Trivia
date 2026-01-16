@@ -27,10 +27,12 @@ public final class TriviaRewarder {
 		this.rewardCountOverride = cfg != null ? cfg.rewardCountOverride : -1;
 
 		Set<Identifier> blacklist = new HashSet<>();
-		for (String raw : cfg.itemBlacklist) {
-			try {
-				blacklist.add(Identifier.of(raw));
-			} catch (Exception ignored) {
+		if (cfg != null && cfg.itemBlacklist != null) {
+			for (String raw : cfg.itemBlacklist) {
+				try {
+					blacklist.add(Identifier.of(raw));
+				} catch (Exception ignored) {
+				}
 			}
 		}
 

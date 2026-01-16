@@ -32,6 +32,9 @@ public final class TriviaPunisher {
 		if (effectPool.isEmpty()) {
 			return;
 		}
+		if (cfg == null) {
+			return;
+		}
 		StatusEffect effect = RandomUtil.pick(effectPool, rng);
 		RegistryEntry<StatusEffect> effectEntry;
 		try {

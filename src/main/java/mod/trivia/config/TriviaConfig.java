@@ -46,4 +46,24 @@ public final class TriviaConfig {
 	public int punishEffectAmplifierMax = 10;
 
 	public List<String> itemBlacklist = new ArrayList<>(List.of("minecraft:air"));
+
+	public TriviaConfig copy() {
+		TriviaConfig c = new TriviaConfig();
+		c.enabled = this.enabled;
+		c.questionDurationSeconds = this.questionDurationSeconds;
+		c.cooldownSeconds = this.cooldownSeconds;
+		c.maxAttempts = this.maxAttempts;
+		c.answerPrefix = this.answerPrefix;
+		c.showAnswerInstructions = this.showAnswerInstructions;
+		c.announceCorrectGuesses = this.announceCorrectGuesses;
+		c.battleModeWrongGuessBroadcast = this.battleModeWrongGuessBroadcast;
+		c.battleModeShowWrongGuesserName = this.battleModeShowWrongGuesserName;
+		c.rewardCountOverride = this.rewardCountOverride;
+		c.punishEffectDurationSecondsMin = this.punishEffectDurationSecondsMin;
+		c.punishEffectDurationSecondsMax = this.punishEffectDurationSecondsMax;
+		c.punishEffectAmplifierMin = this.punishEffectAmplifierMin;
+		c.punishEffectAmplifierMax = this.punishEffectAmplifierMax;
+		c.itemBlacklist = (this.itemBlacklist == null) ? new ArrayList<>() : new ArrayList<>(this.itemBlacklist);
+		return c;
+	}
 }
