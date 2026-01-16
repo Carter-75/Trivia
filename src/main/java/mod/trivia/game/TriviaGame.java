@@ -1,5 +1,6 @@
 package mod.trivia.game;
 
+import mod.trivia.ai.TriviaAiService;
 import mod.trivia.TriviaMod;
 import mod.trivia.config.TriviaConfig;
 import mod.trivia.config.TriviaConfigManager;
@@ -7,10 +8,13 @@ import mod.trivia.punish.TriviaPunisher;
 import mod.trivia.questions.TriviaQuestion;
 import mod.trivia.questions.TriviaQuestionsManager;
 import mod.trivia.reward.TriviaRewarder;
+import mod.trivia.util.AnswerMatcher;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.List;
 import java.util.UUID;
@@ -25,12 +29,17 @@ public final class TriviaGame {
 	private final TriviaQuestionsManager questionsManager = new TriviaQuestionsManager();
 	private final TriviaRewarder rewarder = new TriviaRewarder();
 	private final TriviaPunisher punisher = new TriviaPunisher();
+	private final TriviaAiService ai = new TriviaAiService();
 
 	private final RandomGenerator rng = RandomGenerator.getDefault();
 
 	private Phase phase = Phase.COOLDOWN;
 	private long phaseTicksRemaining = 0;
 	private TriviaRoundState round = new TriviaRoundState();
+	private long roundId = 0;
+
+	private long configLastModifiedMillis = -1;
+	private long configCheckTicker = 0;
 
 	public void reloadFromDisk() {
 		TriviaConfigManager.loadAll();
@@ -40,7 +49,20 @@ public final class TriviaGame {
 		resetToCooldown();
 	}
 
+	public String getActiveAnswerForAdmin() {
+		if (phase != Phase.ACTIVE || round.activeQuestion == null) {
+			return null;
+		}
+		String a = round.activeQuestion.answer;
+		if (a == null) {
+			return null;
+		}
+		return a.stripTrailing();
+	}
+
 	public void onServerTick(MinecraftServer server) {
+		reloadConfigIfChanged(server);
+
 		TriviaConfig cfg = TriviaConfigManager.getConfig();
 		if (!cfg.enabled) {
 			return;
@@ -99,12 +121,16 @@ public final class TriviaGame {
 		}
 
 		String guessDisplay = rawMessage.substring(prefix.length()).stripTrailing();
-		String guess = rawMessage.substring(prefix.length());
-		// Requirement: trim ending spaces; ignore capitalization.
-		guess = normalizeAnswer(guess);
+		String guessRaw = rawMessage.substring(prefix.length());
+		String guess = normalizeAnswer(guessRaw);
 		if (guess.isEmpty()) {
 			player.sendMessage(Text.literal("Trivia: empty answer."), false);
 			return true;
+		}
+
+		// Chat shortcut: .hint generates an AI hint (if enabled).
+		if ("hint".equals(guess) || "h".equals(guess)) {
+			return handleHintRequest(player, cfg);
 		}
 
 		UUID uuid = player.getUuid();
@@ -117,41 +143,233 @@ public final class TriviaGame {
 			player.sendMessage(Text.literal("Trivia: you already failed this one."), false);
 			return true;
 		}
-
-		ps.guessedOnce = true;
-
-		String correctAnswer = round.activeQuestion.answer == null ? "" : normalizeAnswer(round.activeQuestion.answer);
-		boolean correct = correctAnswer.equals(guess);
-		if (correct) {
-			ps.solved = true;
-			TriviaRewarder.RewardResult reward = rewarder.reward(player, rng);
-			if (reward != null) {
-				ps.rewardCount = reward.count();
-				ps.rewardItemName = reward.itemName();
-			}
-			player.sendMessage(Text.literal("Trivia: correct. Answer: " + correctAnswer), false);
-			if (reward != null) {
-				player.sendMessage(Text.literal("Trivia: reward: " + reward.count() + "x " + reward.itemName()), false);
-			} else {
-				player.sendMessage(Text.literal("Trivia: reward pool is empty."), false);
-			}
-			if (cfg.announceCorrectGuesses) {
-				String suffix = cfg.showAnswerInstructions
-					? " Hint: /trivia announce off, /trivia hint off"
-					: "";
-				player.getServer().getPlayerManager().broadcast(
-					Text.literal("Trivia: " + player.getName().getString() + " guessed correctly!" + suffix),
-					false
-				);
-			}
+		if (ps.aiValidationPending) {
+			player.sendMessage(Text.literal("Trivia: already checking an answer, please wait..."), false);
 			return true;
 		}
 
+		ps.guessedOnce = true;
+
+		String correctAnswerRaw = round.activeQuestion.answer == null ? "" : round.activeQuestion.answer;
+		boolean correctLocal = AnswerMatcher.isLikelyCorrectLocal(
+			correctAnswerRaw,
+			guessDisplay,
+			cfg.fuzzyAnswerMatching,
+			cfg.fuzzyMaxEditDistance
+		);
+		if (correctLocal) {
+			handleCorrectGuess(player, ps, cfg, correctAnswerRaw);
+			return true;
+		}
+
+		if (shouldTryAiValidation(cfg, correctAnswerRaw, guessDisplay)) {
+			ps.aiValidationPending = true;
+			ps.aiValidationRoundId = this.roundId;
+			ps.pendingGuessDisplay = guessDisplay;
+			ps.pendingGuessNormalized = guess;
+			player.sendMessage(Text.literal("Trivia: checking your answer..."), false);
+
+			String question = round.activeQuestion.question;
+			ai.validateAnswer(cfg, question, correctAnswerRaw, guessDisplay)
+				.thenAccept(result -> {
+					MinecraftServer server = player.getServer();
+					if (server == null) {
+						return;
+					}
+					server.execute(() -> finalizeAiValidation(server, player, uuid, result));
+				});
+			return true;
+		}
+
+		handleWrongGuess(player, ps, cfg, guessDisplay);
+		return true;
+	}
+
+	private static String normalizeAnswer(String s) {
+		if (s == null) {
+			return "";
+		}
+		// Trim trailing whitespace only (ending spaces) and ignore capitalization.
+		return s.stripTrailing().toLowerCase(Locale.ROOT);
+	}
+
+	private boolean handleHintRequest(ServerPlayerEntity player, TriviaConfig cfg) {
+		if (phase != Phase.ACTIVE || round.activeQuestion == null) {
+			player.sendMessage(Text.literal("Trivia: no active question right now."), false);
+			return true;
+		}
+		TriviaPlayerState ps = round.playerStates.computeIfAbsent(player.getUuid(), id -> new TriviaPlayerState());
+		if (!ai.isEnabled(cfg)) {
+			player.sendMessage(Text.literal("Trivia: AI hints are disabled (or API key is missing)."), false);
+			return true;
+		}
+		// Requirement: hints are only available after at least one WRONG guess.
+		if (ps.attemptsUsed <= 0) {
+			player.sendMessage(Text.literal("Trivia: you can only use hints after at least 1 wrong guess."), false);
+			return true;
+		}
+
+		// Global-hint mode: no private hints are allowed.
+		if (cfg.aiHintsGlobalRequireAllPlayers) {
+			MinecraftServer server = player.getServer();
+			if (server == null) {
+				player.sendMessage(Text.literal("Trivia: server unavailable."), false);
+				return true;
+			}
+
+			if (round.globalHintRevealed) {
+				player.sendMessage(Text.literal("Trivia: global hint already revealed this round."), false);
+				return true;
+			}
+
+			// Only count players who have at least one wrong guess (attemptsUsed > 0).
+			// Players who solved immediately (0 wrong guesses) never become eligible.
+			boolean added = round.globalHintRequesters.add(player.getUuid());
+			if (!added) {
+				player.sendMessage(Text.literal("Trivia: you already requested the global hint."), false);
+				return true;
+			}
+
+			int eligible = computeEligibleGlobalHintCount(server);
+			int requested = computeRequestedEligibleGlobalHintCount(server);
+			if (eligible <= 0) {
+				// Shouldn't happen because requesters are required to have attemptsUsed>0, but keep it safe.
+				player.sendMessage(Text.literal("Trivia: no eligible players for a global hint yet."), false);
+				return true;
+			}
+			server.getPlayerManager().broadcast(
+				Text.literal("Trivia: " + player.getName().getString() + " requested a global hint (" + requested + "/" + eligible + ")."),
+				false
+			);
+
+			if (requested < eligible) {
+				return true;
+			}
+
+			round.globalHintRevealed = true;
+			server.getPlayerManager().broadcast(Text.literal("Trivia: generating a global hint..."), false);
+			String q = round.activeQuestion.question;
+			String a = round.activeQuestion.answer;
+			ai.generateHint(cfg, q, a).thenAccept(hint -> {
+				MinecraftServer srv = player.getServer();
+				if (srv == null) {
+					return;
+				}
+				srv.execute(() -> srv.getPlayerManager().broadcast(Text.literal("Trivia hint: " + hint), false));
+			});
+			return true;
+		}
+
+		// Default: private hint with per-player cooldown.
+		long now = System.currentTimeMillis();
+		int cooldownSeconds = Math.max(0, cfg.aiHintCooldownSeconds);
+		long cooldownMillis = cooldownSeconds * 1000L;
+		if (ps.lastHintRoundId == this.roundId && cooldownMillis > 0 && (now - ps.lastHintMillis) < cooldownMillis) {
+			long left = (cooldownMillis - (now - ps.lastHintMillis) + 999) / 1000;
+			player.sendMessage(Text.literal("Trivia: hint cooldown: " + left + "s"), false);
+			return true;
+		}
+		ps.lastHintMillis = now;
+		ps.lastHintRoundId = this.roundId;
+		player.sendMessage(Text.literal("Trivia: generating hint..."), false);
+		String q = round.activeQuestion.question;
+		String a = round.activeQuestion.answer;
+		ai.generateHint(cfg, q, a).thenAccept(hint -> {
+			MinecraftServer server = player.getServer();
+			if (server == null) {
+				return;
+			}
+			server.execute(() -> player.sendMessage(Text.literal("Trivia hint: " + hint), false));
+		});
+		return true;
+	}
+
+	private static boolean isEligibleForGlobalHint(TriviaPlayerState ps) {
+		if (ps == null) {
+			return false;
+		}
+		// Eligible: at least 1 wrong guess, and still active (not solved, not failed-out).
+		return ps.attemptsUsed > 0 && !ps.solved && !ps.failed;
+	}
+
+	private int computeEligibleGlobalHintCount(MinecraftServer server) {
+		if (server == null) {
+			return 0;
+		}
+		int eligible = 0;
+		for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+			TriviaPlayerState ps = round.playerStates.get(p.getUuid());
+			if (isEligibleForGlobalHint(ps)) {
+				eligible++;
+			}
+		}
+		return eligible;
+	}
+
+	private int computeRequestedEligibleGlobalHintCount(MinecraftServer server) {
+		if (server == null) {
+			return 0;
+		}
+		int requestedEligible = 0;
+		for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
+			TriviaPlayerState ps = round.playerStates.get(p.getUuid());
+			if (!isEligibleForGlobalHint(ps)) {
+				continue;
+			}
+			if (round.globalHintRequesters.contains(p.getUuid())) {
+				requestedEligible++;
+			}
+		}
+		return requestedEligible;
+	}
+
+	private void handleCorrectGuess(ServerPlayerEntity player, TriviaPlayerState ps, TriviaConfig cfg, String correctAnswerRaw) {
+		ps.aiValidationPending = false;
+		ps.solved = true;
+		String correctAnswer = correctAnswerRaw == null ? "" : correctAnswerRaw.stripTrailing();
+		TriviaRewarder.RewardResult reward = rewarder.reward(player, rng);
+		if (reward != null) {
+			ps.rewardCount = reward.count();
+			ps.rewardItemName = reward.itemName();
+		}
+		player.sendMessage(Text.literal("Trivia: correct. Answer: " + normalizeAnswer(correctAnswer)), false);
+		if (reward != null) {
+			player.sendMessage(Text.literal("Trivia: reward: " + reward.count() + "x " + reward.itemName()), false);
+		} else {
+			player.sendMessage(Text.literal("Trivia: reward pool is empty."), false);
+		}
+		if (cfg.announceCorrectGuesses) {
+			String suffix = cfg.showAnswerInstructions
+				? " Hint: /trivia announce off, /trivia hint off"
+				: "";
+			player.getServer().getPlayerManager().broadcast(
+				Text.literal("Trivia: " + player.getName().getString() + " guessed correctly!" + suffix),
+				false
+			);
+		}
+	}
+
+	private void handleWrongGuess(ServerPlayerEntity player, TriviaPlayerState ps, TriviaConfig cfg, String guessDisplay) {
+		ps.aiValidationPending = false;
+		ps.guessedOnce = true;
 		ps.attemptsUsed++;
+
+		// Real-time global-hint eligibility counter updates (only when a player becomes eligible).
+		if (cfg.aiHintsGlobalRequireAllPlayers && !round.globalHintRevealed && ps.attemptsUsed == 1) {
+			MinecraftServer server = player.getServer();
+			if (server != null) {
+				int eligible = computeEligibleGlobalHintCount(server);
+				int requested = computeRequestedEligibleGlobalHintCount(server);
+				server.getPlayerManager().broadcast(
+					Text.literal("Trivia: global hint progress (" + requested + "/" + eligible + ") eligible players."),
+					false
+				);
+			}
+		}
 		if (cfg.maxAttempts >= 0 && ps.attemptsUsed >= cfg.maxAttempts) {
 			ps.failed = true;
 			punisher.punish(player, cfg, rng, "max attempts");
-			return true;
+			return;
 		}
 
 		if (cfg.battleModeWrongGuessBroadcast) {
@@ -168,15 +386,48 @@ public final class TriviaGame {
 			? "unlimited"
 			: Integer.toString(Math.max(0, cfg.maxAttempts - ps.attemptsUsed));
 		player.sendMessage(Text.literal("Trivia: wrong. Tries left: " + triesLeft), false);
-		return true;
 	}
 
-	private static String normalizeAnswer(String s) {
-		if (s == null) {
-			return "";
+	private boolean shouldTryAiValidation(TriviaConfig cfg, String correctAnswerRaw, String guessDisplay) {
+		if (cfg == null || !cfg.aiSemanticAnswerValidation || !ai.isEnabled(cfg)) {
+			return false;
 		}
-		// Trim trailing whitespace only (ending spaces) and ignore capitalization.
-		return s.stripTrailing().toLowerCase(Locale.ROOT);
+		String correctLoose = AnswerMatcher.normalizeLoose(correctAnswerRaw);
+		String guessLoose = AnswerMatcher.normalizeLoose(guessDisplay);
+		if (correctLoose.isEmpty() || guessLoose.isEmpty()) {
+			return false;
+		}
+		// Only consult AI for "close" guesses to keep API usage sane.
+		int max = Math.max(2, Math.max(cfg.fuzzyMaxEditDistance, 3) + 2);
+		return AnswerMatcher.levenshteinWithin(correctLoose, guessLoose, max);
+	}
+
+	private void finalizeAiValidation(MinecraftServer server, ServerPlayerEntity player, UUID uuid, TriviaAiService.AiValidationResult result) {
+		if (server == null || player == null || result == null) {
+			return;
+		}
+		if (phase != Phase.ACTIVE || round.activeQuestion == null) {
+			return;
+		}
+		TriviaPlayerState ps = round.playerStates.get(uuid);
+		if (ps == null || !ps.aiValidationPending || ps.aiValidationRoundId != this.roundId) {
+			return;
+		}
+		ps.aiValidationPending = false;
+
+		// Player might have solved/failed via another path while we waited.
+		if (ps.solved || ps.failed) {
+			return;
+		}
+
+		TriviaConfig cfg = TriviaConfigManager.getConfig();
+		String correctAnswerRaw = round.activeQuestion.answer;
+		if (result.isCorrect()) {
+			handleCorrectGuess(player, ps, cfg, correctAnswerRaw);
+			return;
+		}
+
+		handleWrongGuess(player, ps, cfg, ps.pendingGuessDisplay == null ? "" : ps.pendingGuessDisplay);
 	}
 
 	private void startRound(MinecraftServer server) {
@@ -191,6 +442,7 @@ public final class TriviaGame {
 		TriviaConfig cfg = TriviaConfigManager.getConfig();
 		round = new TriviaRoundState();
 		round.activeQuestion = qs.get(rng.nextInt(qs.size()));
+		this.roundId++;
 		phase = Phase.ACTIVE;
 		phaseTicksRemaining = Math.max(20, (long) cfg.questionDurationSeconds * 20L);
 
@@ -198,9 +450,13 @@ public final class TriviaGame {
 		server.getPlayerManager().broadcast(Text.literal("Trivia: " + q), false);
 		if (cfg.showAnswerInstructions) {
 			String triesText = (cfg.maxAttempts < 0) ? "unlimited" : Integer.toString(cfg.maxAttempts);
+			String hintInfo = cfg.aiHintsGlobalRequireAllPlayers
+				? "Hint: after 1+ wrong guess, all eligible players must type " + cfg.answerPrefix + "hint for 1 global hint"
+				: "Hint: after 1+ wrong guess, type " + cfg.answerPrefix + "hint (AI must be enabled)";
 			server.getPlayerManager().broadcast(
 				Text.literal(
 					"Answer with " + cfg.answerPrefix + "<answer> (tries: " + triesText + ", time: " + cfg.questionDurationSeconds + "s)"
+						+ " | " + hintInfo
 						+ " | Admin: /trivia hint off hides hint lines"
 						+ ", /trivia battle off disables wrong-guess broadcasts"
 						+ ", /trivia battle name off hides the guesser name"
@@ -262,5 +518,34 @@ public final class TriviaGame {
 		phaseTicksRemaining = Math.max(20, (long) cfg.cooldownSeconds * 20L);
 		round = new TriviaRoundState();
 		TriviaMod.LOGGER.info("Trivia cooldown started: {}s", cfg.cooldownSeconds);
+	}
+
+	private void reloadConfigIfChanged(MinecraftServer server) {
+		configCheckTicker++;
+		if ((configCheckTicker % 20) != 0) {
+			return;
+		}
+		Path settings = TriviaConfigManager.getSettingsPath();
+		try {
+			if (Files.notExists(settings)) {
+				return;
+			}
+			long m = Files.getLastModifiedTime(settings).toMillis();
+			if (configLastModifiedMillis == -1) {
+				configLastModifiedMillis = m;
+				return;
+			}
+			if (m == configLastModifiedMillis) {
+				return;
+			}
+			configLastModifiedMillis = m;
+			TriviaConfigManager.loadAll();
+			TriviaConfig cfg = TriviaConfigManager.getConfig();
+			rewarder.rebuildPools(cfg);
+			punisher.rebuildPools();
+			TriviaMod.LOGGER.info("Trivia settings.json changed; config auto-reloaded.");
+		} catch (Exception e) {
+			TriviaMod.LOGGER.warn("Trivia config auto-reload failed: {}", e.getMessage());
+		}
 	}
 }

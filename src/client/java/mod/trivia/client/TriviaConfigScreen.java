@@ -116,7 +116,7 @@ public final class TriviaConfigScreen extends Screen {
 
 		this.addDrawableChild(ButtonWidget.builder(Text.literal("Save"), btn -> {
 			try {
-				TriviaConfig cfg = new TriviaConfig();
+				TriviaConfig cfg = TriviaConfigManager.getConfig().copy();
 				cfg.enabled = this.working.enabled;
 				cfg.answerPrefix = (this.working.answerPrefix == null || this.working.answerPrefix.isBlank())
 					? "."
@@ -203,7 +203,7 @@ public final class TriviaConfigScreen extends Screen {
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Answer in chat using: <prefix><answer> (default prefix is '.')"), helpX, helpY, 0xAAAAAA);
 		helpY += line;
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Admin commands: /trivia enable|disable|toggle|status|reload|ask|hint|announce|battle"), helpX, helpY, 0xAAAAAA);
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Admin commands: /trivia enable|disable|toggle|status|answer|reload|ask|hint|announce|battle|ai"), helpX, helpY, 0xAAAAAA);
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Hint OFF hides the 'Answer with ...' line and removes extra hints from battle messages."), helpX, helpY, 0xAAAAAA);
 		helpY += line;
@@ -212,8 +212,12 @@ public final class TriviaConfigScreen extends Screen {
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Battle name display can be toggled with: /trivia battle name on|off"), helpX, helpY, 0xAAAAAA);
 		helpY += line;
 		context.drawTextWithShadow(this.textRenderer, Text.literal("Reward Count Override: -1=random, otherwise fixed (capped by item stack size)."), helpX, helpY, 0xAAAAAA);
+		helpY += line;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("AI hint: after 1+ wrong guess, type .hint (requires AI enabled + key)."), helpX, helpY, 0xAAAAAA);
+		helpY += line;
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Global hint mode: no private hints; all eligible players must .hint for 1 global hint."), helpX, helpY, 0xAAAAAA);
 
-		context.drawTextWithShadow(this.textRenderer, Text.literal("Edits apply on the server; run /trivia reload to apply immediately."), 10, this.height - 20, 0xAAAAAA);
+		context.drawTextWithShadow(this.textRenderer, Text.literal("Edits auto-reload from settings.json; /trivia reload also works."), 10, this.height - 20, 0xAAAAAA);
 		super.render(context, mouseX, mouseY, delta);
 	}
 }

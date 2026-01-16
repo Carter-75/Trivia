@@ -82,6 +82,42 @@ public final class TriviaConfigManager {
 						cfg.battleModeShowWrongGuesserName = true;
 						changed = true;
 					}
+					if (!obj.has("aiEnabled")) {
+						cfg.aiEnabled = false;
+						changed = true;
+					}
+					if (!obj.has("openAiApiKey")) {
+						cfg.openAiApiKey = "";
+						changed = true;
+					}
+					if (!obj.has("openAiModel")) {
+						cfg.openAiModel = "gpt-4o-mini";
+						changed = true;
+					}
+					if (!obj.has("aiSemanticAnswerValidation")) {
+						cfg.aiSemanticAnswerValidation = true;
+						changed = true;
+					}
+					if (!obj.has("aiRequestTimeoutSeconds")) {
+						cfg.aiRequestTimeoutSeconds = 8;
+						changed = true;
+					}
+					if (!obj.has("aiHintCooldownSeconds")) {
+						cfg.aiHintCooldownSeconds = 20;
+						changed = true;
+					}
+					if (!obj.has("aiHintsGlobalRequireAllPlayers")) {
+						cfg.aiHintsGlobalRequireAllPlayers = true;
+						changed = true;
+					}
+					if (!obj.has("fuzzyAnswerMatching")) {
+						cfg.fuzzyAnswerMatching = true;
+						changed = true;
+					}
+					if (!obj.has("fuzzyMaxEditDistance")) {
+						cfg.fuzzyMaxEditDistance = 3;
+						changed = true;
+					}
 				}
 			} catch (Exception ignored) {
 				// If the JSON isn't parseable here, the outer try/catch will handle it.

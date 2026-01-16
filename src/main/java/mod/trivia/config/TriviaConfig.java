@@ -6,6 +6,59 @@ import java.util.List;
 public final class TriviaConfig {
 	public boolean enabled = true;
 
+	/**
+	 * Enables OpenAI-powered features (AI hints and optional semantic answer checks).
+	 *
+	 * The API key is stored in the config file (plaintext), so treat the config folder as sensitive.
+	 */
+	public boolean aiEnabled = false;
+
+	/**
+	 * OpenAI API key used for AI features.
+	 *
+	 * Note: stored on disk in the config file.
+	 */
+	public String openAiApiKey = "";
+
+	/**
+	 * OpenAI model to use for AI requests.
+	 */
+	public String openAiModel = "gpt-4o-mini";
+
+	/**
+	 * If true, uses AI as a secondary check for "almost correct" answers.
+	 * Local fuzzy matching still runs first.
+	 */
+	public boolean aiSemanticAnswerValidation = true;
+
+	/**
+	 * Max time to wait for AI responses before failing the request.
+	 */
+	public int aiRequestTimeoutSeconds = 8;
+
+	/**
+	 * Per-player hint cooldown (seconds).
+	 */
+	public int aiHintCooldownSeconds = 20;
+
+	/**
+	 * When enabled, hints are ONLY global and require all online players to request (.hint) before
+	 * a single global hint is broadcast. After the global hint is shown, further hint requests are ignored
+	 * for the rest of that round.
+	 */
+	public boolean aiHintsGlobalRequireAllPlayers = true;
+
+	/**
+	 * Enables local fuzzy matching (typos/missing spaces).
+	 */
+	public boolean fuzzyAnswerMatching = true;
+
+	/**
+	 * Maximum edit distance allowed for local fuzzy matching.
+	 * Smaller values are stricter; 0 means exact match.
+	 */
+	public int fuzzyMaxEditDistance = 3;
+
 	public int questionDurationSeconds = 60;
 	public int cooldownSeconds = 540;
 
@@ -50,6 +103,15 @@ public final class TriviaConfig {
 	public TriviaConfig copy() {
 		TriviaConfig c = new TriviaConfig();
 		c.enabled = this.enabled;
+		c.aiEnabled = this.aiEnabled;
+		c.openAiApiKey = this.openAiApiKey;
+		c.openAiModel = this.openAiModel;
+		c.aiSemanticAnswerValidation = this.aiSemanticAnswerValidation;
+		c.aiRequestTimeoutSeconds = this.aiRequestTimeoutSeconds;
+		c.aiHintCooldownSeconds = this.aiHintCooldownSeconds;
+		c.aiHintsGlobalRequireAllPlayers = this.aiHintsGlobalRequireAllPlayers;
+		c.fuzzyAnswerMatching = this.fuzzyAnswerMatching;
+		c.fuzzyMaxEditDistance = this.fuzzyMaxEditDistance;
 		c.questionDurationSeconds = this.questionDurationSeconds;
 		c.cooldownSeconds = this.cooldownSeconds;
 		c.maxAttempts = this.maxAttempts;
