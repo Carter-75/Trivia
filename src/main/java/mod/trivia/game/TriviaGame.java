@@ -15,12 +15,16 @@ import net.minecraft.text.Text;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.List;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
 
 public final class TriviaGame {
+	private static final int QUESTION_NO_REPEAT_WINDOW = 20;
+
 	private enum Phase {
 		COOLDOWN,
 		ACTIVE
@@ -32,6 +36,8 @@ public final class TriviaGame {
 	private final TriviaAiService ai = new TriviaAiService();
 
 	private final RandomGenerator rng = RandomGenerator.getDefault();
+	private final ArrayDeque<String> recentQuestionKeys = new ArrayDeque<>();
+	private final HashSet<String> recentQuestionKeySet = new HashSet<>();
 
 	private Phase phase = Phase.COOLDOWN;
 	private long phaseTicksRemaining = 0;
@@ -441,7 +447,7 @@ public final class TriviaGame {
 
 		TriviaConfig cfg = TriviaConfigManager.getConfig();
 		round = new TriviaRoundState();
-		round.activeQuestion = qs.get(rng.nextInt(qs.size()));
+		round.activeQuestion = pickRandomQuestionWithHistory(qs);
 		this.roundId++;
 		phase = Phase.ACTIVE;
 		phaseTicksRemaining = Math.max(20, (long) cfg.questionDurationSeconds * 20L);
@@ -466,6 +472,68 @@ public final class TriviaGame {
 				false
 			);
 		}
+	}
+
+	private TriviaQuestion pickRandomQuestionWithHistory(List<TriviaQuestion> qs) {
+		if (qs == null || qs.isEmpty()) {
+			return null;
+		}
+
+		int window = Math.max(0, Math.min(QUESTION_NO_REPEAT_WINDOW, qs.size() - 1));
+		if (window <= 0 || recentQuestionKeySet.isEmpty()) {
+			TriviaQuestion picked = qs.get(rng.nextInt(qs.size()));
+			recordPickedQuestion(picked, window);
+			return picked;
+		}
+
+		List<TriviaQuestion> candidates = null;
+		for (TriviaQuestion q : qs) {
+			String key = questionKey(q);
+			if (key.isEmpty() || !recentQuestionKeySet.contains(key)) {
+				if (candidates == null) {
+					candidates = new java.util.ArrayList<>();
+				}
+				candidates.add(q);
+			}
+		}
+
+		TriviaQuestion picked;
+		if (candidates == null || candidates.isEmpty()) {
+			// Not enough unique questions to satisfy the window; fall back to any question.
+			picked = qs.get(rng.nextInt(qs.size()));
+		} else {
+			picked = candidates.get(rng.nextInt(candidates.size()));
+		}
+		recordPickedQuestion(picked, window);
+		return picked;
+	}
+
+	private void recordPickedQuestion(TriviaQuestion q, int window) {
+		if (q == null) {
+			return;
+		}
+		String key = questionKey(q);
+		if (key.isEmpty()) {
+			return;
+		}
+		recentQuestionKeys.addLast(key);
+		recentQuestionKeySet.add(key);
+		while (recentQuestionKeys.size() > window) {
+			String removed = recentQuestionKeys.removeFirst();
+			recentQuestionKeySet.remove(removed);
+		}
+	}
+
+	private static String questionKey(TriviaQuestion q) {
+		if (q == null) {
+			return "";
+		}
+		String question = q.question == null ? "" : q.question.stripTrailing();
+		String answer = q.answer == null ? "" : q.answer.stripTrailing();
+		if (question.isBlank()) {
+			return "";
+		}
+		return question + "\n" + answer;
 	}
 
 	private void endRound(MinecraftServer server) {
