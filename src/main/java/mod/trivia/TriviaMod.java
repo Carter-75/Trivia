@@ -35,23 +35,40 @@ public final class TriviaMod implements ModInitializer {
 				return true;
 			}
 			String raw = message.getContent().getString();
-			if (raw == null || raw.isEmpty()) {
-				return true;
-			}
-			String prefix = TriviaConfigManager.getConfig().answerPrefix;
-			if (prefix == null || prefix.isBlank()) {
-				prefix = ".";
-			}
-			if (!raw.startsWith(prefix)) {
-				return true;
-			}
-			boolean handled = GAME.onPlayerAttempt(player, raw);
-			if (handled) {
-				return false;
-			}
-			player.sendMessage(Text.literal("Trivia: no active question right now."), false);
-			return false;
+			return !handleChatAttempt(player, raw);
 		});
+
+		// Fallback handler for environments where ALLOW_CHAT_MESSAGE does not fire.
+		ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
+			if (!(sender instanceof ServerPlayerEntity player)) {
+				return;
+			}
+			String raw = message.getContent().getString();
+			handleChatAttempt(player, raw);
+		});
+	}
+
+	private static boolean handleChatAttempt(ServerPlayerEntity player, String raw) {
+		if (player == null || raw == null || raw.isEmpty()) {
+			return false;
+		}
+		if (!TriviaConfigManager.getConfig().enabled) {
+			return false;
+		}
+		String prefix = TriviaConfigManager.getConfig().answerPrefix;
+		if (prefix == null || prefix.isBlank()) {
+			prefix = ".";
+		}
+		if (!raw.startsWith(prefix)) {
+			return false;
+		}
+		TriviaMod.LOGGER.info("Trivia chat attempt from {}: {}", player.getName().getString(), raw);
+		boolean handled = GAME.onPlayerAttempt(player, raw);
+		TriviaMod.LOGGER.info("Trivia chat attempt handled={}, activeRound={}", handled, GAME.getActiveAnswerForAdmin() != null);
+		if (!handled) {
+			player.sendMessage(Text.literal("Trivia: no active question right now."), false);
+		}
+		return true;
 	}
 
 	public static TriviaGame game() {

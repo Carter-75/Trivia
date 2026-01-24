@@ -41,11 +41,11 @@ public final class TriviaAiService {
 			return CompletableFuture.completedFuture("Hint unavailable.");
 		}
 		if (!isEnabled(cfg)) {
-			return CompletableFuture.failedFuture(new IllegalStateException("AI mode is disabled or API key is missing"));
+			return CompletableFuture.completedFuture("Hint unavailable.");
 		}
 
 		if (!tryRateLimitOk()) {
-			return CompletableFuture.failedFuture(new IllegalStateException("AI is busy; try again in a moment"));
+			return CompletableFuture.completedFuture("AI is busy; try again in a moment.");
 		}
 
 		String system = String.join("\n",
@@ -99,14 +99,14 @@ public final class TriviaAiService {
 			return CompletableFuture.completedFuture(new AiValidationResult(false, "missing input"));
 		}
 		if (!isEnabled(cfg)) {
-			return CompletableFuture.failedFuture(new IllegalStateException("AI mode is disabled or API key is missing"));
+			return CompletableFuture.completedFuture(new AiValidationResult(false, "ai disabled"));
 		}
 		if (!cfg.aiSemanticAnswerValidation) {
 			return CompletableFuture.completedFuture(new AiValidationResult(false, "aiSemanticAnswerValidation disabled"));
 		}
 
 		if (!tryRateLimitOk()) {
-			return CompletableFuture.failedFuture(new IllegalStateException("AI is busy; try again in a moment"));
+			return CompletableFuture.completedFuture(new AiValidationResult(false, "ai busy"));
 		}
 
 		String system = String.join("\n",

@@ -74,10 +74,37 @@ final class OpenAiClient {
 				int code = resp.statusCode();
 				String body = resp.body();
 				if (code < 200 || code >= 300) {
-					throw new RuntimeException("OpenAI request failed (" + code + ")");
+					String err = extractErrorMessage(body);
+					String suffix = err.isBlank() ? "" : (": " + err);
+					throw new RuntimeException("OpenAI request failed (" + code + ")" + suffix);
 				}
 				return extractFirstContent(body);
 			});
+	}
+
+	private static String extractErrorMessage(String json) {
+		if (json == null || json.isBlank()) {
+			return "";
+		}
+		try {
+			JsonElement rootEl = GSON.fromJson(json, JsonElement.class);
+			if (rootEl == null || !rootEl.isJsonObject()) {
+				return json.strip();
+			}
+			JsonObject root = rootEl.getAsJsonObject();
+			JsonObject error = root.getAsJsonObject("error");
+			if (error == null) {
+				return json.strip();
+			}
+			String message = error.has("message") ? error.get("message").getAsString() : "";
+			String type = error.has("type") ? error.get("type").getAsString() : "";
+			if (!message.isBlank() && !type.isBlank()) {
+				return type + ": " + message;
+			}
+			return !message.isBlank() ? message : json.strip();
+		} catch (Exception e) {
+			return json.strip();
+		}
 	}
 
 	private static String extractFirstContent(String json) {
