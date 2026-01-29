@@ -11,11 +11,16 @@ import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public final class TriviaMod implements ModInitializer {
 	public static final String MOD_ID = "trivia";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	private static final TriviaGame GAME = new TriviaGame();
+	private static final Map<UUID, String> CHAT_MESSAGE_GUARD = new HashMap<>();
 
 	@Override
 	public void onInitialize() {
@@ -35,6 +40,15 @@ public final class TriviaMod implements ModInitializer {
 				return true;
 			}
 			String raw = message.getContent().getString();
+			if (raw != null && !raw.isEmpty()) {
+				String prefix = TriviaConfigManager.getConfig().answerPrefix;
+				if (prefix == null || prefix.isBlank()) {
+					prefix = ".";
+				}
+				if (raw.startsWith(prefix)) {
+					CHAT_MESSAGE_GUARD.put(player.getUuid(), raw);
+				}
+			}
 			return !handleChatAttempt(player, raw);
 		});
 
@@ -44,6 +58,11 @@ public final class TriviaMod implements ModInitializer {
 				return;
 			}
 			String raw = message.getContent().getString();
+			String guarded = CHAT_MESSAGE_GUARD.get(player.getUuid());
+			if (guarded != null && guarded.equals(raw)) {
+				CHAT_MESSAGE_GUARD.remove(player.getUuid());
+				return;
+			}
 			handleChatAttempt(player, raw);
 		});
 	}
@@ -68,7 +87,7 @@ public final class TriviaMod implements ModInitializer {
 		if (!handled) {
 			player.sendMessage(Text.literal("Trivia: no active question right now."), false);
 		}
-		return true;
+		return handled;
 	}
 
 	public static TriviaGame game() {
